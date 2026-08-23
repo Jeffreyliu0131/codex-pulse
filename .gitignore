@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.vercel/
+node_modules/
+dist/
+build/
+.swiftpm/
+.build/
+DerivedData/
+coverage/
+*.log
+*.pem
+*.key
+secrets/

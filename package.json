@@ -1,0 +1,41 @@
+{
+  "name": "codexpulse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/pwa",
+    "packages/contracts",
+    "services/relay"
+  ],
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "assets": "node scripts/generate-icons.mjs",
+    "bridge:build": "CLANG_MODULE_CACHE_PATH=$PWD/apps/macos-bridge/.build/clang-cache SWIFTPM_MODULECACHE_OVERRIDE=$PWD/apps/macos-bridge/.build/swiftpm-cache swift build --disable-sandbox --package-path apps/macos-bridge",
+    "bridge:self-test": "CLANG_MODULE_CACHE_PATH=$PWD/apps/macos-bridge/.build/clang-cache SWIFTPM_MODULECACHE_OVERRIDE=$PWD/apps/macos-bridge/.build/swiftpm-cache swift run --disable-sandbox --package-path apps/macos-bridge codex-pulse-bridge-self-test",
+    "build": "npm run build --workspace @codexpulse/pwa",
+    "dev": "npm run dev --workspace @codexpulse/relay",
+    "dev:pwa": "npm run dev --workspace @codexpulse/pwa",
+    "preview:ui": "node scripts/preview-ui.mjs",
+    "db:migrate": "npm run db:migrate --workspace @codexpulse/relay",
+    "test": "node --test scripts/*.test.mjs && npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify": "npm run typecheck && npm test && npm run build",
+    "verify:all": "npm run verify && npm run bridge:build && npm run bridge:self-test"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "web-push": "^3.6.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/web-push": "^3.6.4",
+    "sharp": "^0.35.3",
+    "tsx": "^4.23.12",
+    "typescript": "6.0.3",
+    "vite": "^8.2.1"
+  }
+}

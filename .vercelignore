@@ -1,0 +1,17 @@
+.env*
+.git
+.vercel
+node_modules
+
+# Host-only Swift sources and local build products are never part of the Relay/PWA deployment.
+apps/macos-bridge
+apps/pwa/dist
+
+# Tests and working documents are validated before deployment but are not runtime inputs.
+apps/pwa/test
+packages/contracts/test
+services/relay/test
+scripts/*.test.mjs
+docs
+coverage
+*.log
