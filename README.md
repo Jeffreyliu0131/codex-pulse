@@ -4,6 +4,12 @@ CodexPulse is a read-only, notification-first companion for long-running Codex t
 
 The project explores a concrete product problem: how to reduce manual status checking without exposing prompts, transcripts, repository paths, or remote-control capability.
 
+## Ownership and evidence boundary
+
+This is an independent personal project. I defined the notification-first product boundary, privacy threat model, data-minimization rules, pairing and revocation behavior, failure states, and acceptance criteria. AI coding agents supported implementation and review under my direction; I reviewed changes and verified the contracts, relay, PWA, and macOS bridge behavior.
+
+The repository demonstrates a tested reference implementation. It does not claim production-scale reliability, external user adoption, or endorsement by OpenAI.
+
 ## Product boundaries
 
 CodexPulse can represent:
