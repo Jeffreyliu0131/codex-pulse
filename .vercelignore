@@ -15,3 +15,18 @@ scripts/*.test.mjs
 docs
 coverage
 *.log
+
+# Never upload local credentials, state or private-history backups.
+.dev.vars*
+auth.json
+secrets
+operator-private
+*.pem
+*.key
+*.sqlite*
+*.db
+*.dump
+*.bundle
+
+# Local emitted relay verification output is not a deployment input.
+.build

@@ -197,7 +197,7 @@ Forbidden log fields:
 
 ## 11. Retention
 
-Accepted MVP defaults (D-011 and D-013):
+Implemented MVP defaults (see [architecture](ARCHITECTURE.md)):
 
 - latest task projection: active tasks plus seven days of recent history;
 - events: seven days maximum and a 10,000-row application cap;
@@ -265,7 +265,7 @@ Implemented and covered by source tests or static inspection:
 
 Still required on the target environment:
 
-- [x] compile/link the Bridge and pass the 21-check standalone Swift self-test;
+- [x] compile/link the Bridge and pass the 25-check standalone Swift self-test;
 - [ ] run the mirrored XCTest suite when full Xcode is available;
 - [ ] verify the per-host secret is stored and retrieved from Keychain on both Macs;
 - [ ] inspect deployed Vercel logs to confirm no infrastructure body logging is enabled;

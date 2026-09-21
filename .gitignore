@@ -14,3 +14,13 @@ coverage/
 *.pem
 *.key
 secrets/
+
+# Private operator state and history backups never belong to the code source.
+.dev.vars*
+auth.json
+*.sqlite
+*.sqlite-*
+*.db
+*.dump
+*.bundle
+operator-private/

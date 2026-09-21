@@ -37,4 +37,6 @@ npm run typecheck --workspace @codexpulse/relay
 npm run test --workspace @codexpulse/relay
 ```
 
-Database migrations use only standard Postgres SQL. A real Neon integration and Vercel runtime smoke test are required after deployment.
+Database migrations use standard Postgres SQL, but the runtime storage driver uses Neon HTTP; generic PostgreSQL is not a tested drop-in replacement. A real Neon integration and Vercel runtime smoke test remain required for an authorized deployment. See [self-hosting](../../docs/DEPLOYMENT.md) and [operations](../../docs/OPERATIONS.md).
+
+`npm run readiness` from the root validates injected server configuration without reading `.env` or calling services. Its checks use the runtime validator; production rejects example/loopback origins. Missing private configuration is expected in a public checkout.

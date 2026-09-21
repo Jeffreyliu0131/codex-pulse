@@ -1,9 +1,9 @@
 # CodexPulse PRD
 
-状态：Personal MVP and cloud baseline implemented; host/iPhone validation pending
+状态：Personal MVP code implemented; active deployment and host/iPhone validation unverified
 日期：2026-08-11  
 负责人：Jeff  
-阶段：云端基线完成，等待主机与真实设备验收
+阶段：单一代码源归一，未执行重新部署；真实运行验收待授权
 
 ## 1. Executive Summary
 
@@ -303,7 +303,7 @@ Mitigation：MVP 完全只读；后续需要单独威胁建模与签名挑战。
 
 ## 10. Remaining Validation Questions
 
-产品与技术选择已由 D-011 至 D-018 决定。云端基线已确认使用 Vercel；上线验收仍需用真实设备回答：
+当前实现与可选自托管拓扑见 [架构](ARCHITECTURE.md) 与 [部署指南](DEPLOYMENT.md)。历史私有决定编号不作为本仓依赖；当前没有已验证的活跃部署。上线验收仍需用真实设备回答：
 
 1. MacBook 与 Mac mini 上的真实 Remote turn 是否都稳定触发用户级 notify；目标为至少 9/10。
 2. 独立 App Server 的 `thread/list` 在两台目标主机上能否稳定观测 Remote 的 `waitingOnApproval` 与 `waitingOnUserInput`。

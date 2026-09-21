@@ -1,7 +1,9 @@
 import type { RelayConfig } from "./types.ts";
 
-function required(name: string): string {
-  const value = process.env[name]?.trim();
+type Environment = Readonly<Record<string, string | undefined>>;
+
+function required(env: Environment, name: string): string {
+  const value = env[name]?.trim();
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
 }
@@ -30,9 +32,21 @@ function vapidPublicKey(value: string): string {
   return value;
 }
 
-function exactAppOrigin(value: string): string {
+function parsedURL(name: string, value: string): URL {
+  try { return new URL(value); } catch {
+    // URL errors may include credentials in their input; never propagate them.
+    throw new Error(`${name} must be a valid URL`);
+  }
+}
+
+function placeholderHost(hostname: string): boolean {
+  return /(?:^|\.)(?:example(?:\.(?:com|net|org))?|test|invalid|localhost)(?:\.|$)/i.test(hostname) ||
+    /^your[-.]/i.test(hostname);
+}
+
+function exactAppOrigin(value: string, production: boolean): string {
   const normalized = value.endsWith("/") ? value.slice(0, -1) : value;
-  const parsed = new URL(normalized);
+  const parsed = parsedURL("APP_ORIGIN", normalized);
   const local = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1" || parsed.hostname === "[::1]";
   if (
     (parsed.protocol !== "https:" && !(local && parsed.protocol === "http:")) ||
@@ -42,7 +56,8 @@ function exactAppOrigin(value: string): string {
     parsed.search ||
     parsed.hash ||
     normalized !== parsed.origin ||
-    normalized === "https://codexpulse.example.vercel.app"
+    normalized === "https://codexpulse.example.vercel.app" ||
+    (production && (parsed.protocol !== "https:" || local || placeholderHost(parsed.hostname)))
   ) {
     throw new Error("APP_ORIGIN must be an exact HTTPS origin without credentials, path, query, or fragment");
   }
@@ -50,7 +65,7 @@ function exactAppOrigin(value: string): string {
 }
 
 function vapidSubject(value: string): string {
-  const parsed = new URL(value);
+  const parsed = parsedURL("VAPID_SUBJECT", value);
   const validMail = parsed.protocol === "mailto:" && parsed.pathname.includes("@");
   const validHttps = parsed.protocol === "https:" && !parsed.username && !parsed.password;
   if ((!validMail && !validHttps) || value === "mailto:owner@example.com") {
@@ -60,9 +75,10 @@ function vapidSubject(value: string): string {
 }
 
 function databaseUrl(value: string): string {
-  const parsed = new URL(value);
+  const parsed = parsedURL("DATABASE_URL", value);
   if (
     (parsed.protocol !== "postgres:" && parsed.protocol !== "postgresql:") ||
+    !parsed.hostname || parsed.pathname.length <= 1 ||
     parsed.hostname === "host" ||
     parsed.username === "user"
   ) {
@@ -71,8 +87,8 @@ function databaseUrl(value: string): string {
   return value;
 }
 
-function positiveInteger(name: string, fallback: number): number {
-  const raw = process.env[name];
+function positiveInteger(env: Environment, name: string, fallback: number): number {
+  const raw = env[name];
   if (!raw) return fallback;
   if (!/^\d+$/.test(raw)) throw new Error(`${name} must be a positive integer`);
   const value = Number(raw);
@@ -84,19 +100,17 @@ function positiveInteger(name: string, fallback: number): number {
 
 let cached: RelayConfig | null = null;
 
-export function loadConfig(): RelayConfig {
-  if (cached) return cached;
-
-  const nodeEnv = process.env.NODE_ENV === "production"
+export function validateConfig(env: Environment): RelayConfig {
+  const nodeEnv = env.NODE_ENV === "production"
     ? "production"
-    : process.env.NODE_ENV === "test"
+    : env.NODE_ENV === "test"
       ? "test"
       : "development";
-  const appOrigin = exactAppOrigin(required("APP_ORIGIN"));
-  const accessToken = minimum("PULSE_ACCESS_TOKEN", required("PULSE_ACCESS_TOKEN"), 32);
-  const sessionSecret = minimum("SESSION_SECRET", required("SESSION_SECRET"), 32);
-  const masterKeyValue = required("RELAY_MASTER_KEY");
-  const cronSecretRaw = process.env.CRON_SECRET?.trim() || null;
+  const appOrigin = exactAppOrigin(required(env, "APP_ORIGIN"), nodeEnv === "production");
+  const accessToken = minimum("PULSE_ACCESS_TOKEN", required(env, "PULSE_ACCESS_TOKEN"), 32);
+  const sessionSecret = minimum("SESSION_SECRET", required(env, "SESSION_SECRET"), 32);
+  const masterKeyValue = required(env, "RELAY_MASTER_KEY");
+  const cronSecretRaw = env.CRON_SECRET?.trim() || null;
   const cronSecret = cronSecretRaw ? minimum("CRON_SECRET", cronSecretRaw, 32) : null;
   if (nodeEnv === "production" && !cronSecret) {
     throw new Error("CRON_SECRET is required in production");
@@ -106,26 +120,29 @@ export function loadConfig(): RelayConfig {
     throw new Error("Access, session, master, and cron secrets must be generated independently");
   }
 
-  cached = {
+  return {
     appOrigin,
     accessToken,
     sessionSecret,
     masterKey: decodedBase64url("RELAY_MASTER_KEY", masterKeyValue, 32),
-    vapidPublicKey: vapidPublicKey(required("VAPID_PUBLIC_KEY")),
-    vapidPrivateKey: decodedBase64url("VAPID_PRIVATE_KEY", required("VAPID_PRIVATE_KEY"), 32).toString("base64url"),
-    vapidSubject: vapidSubject(required("VAPID_SUBJECT")),
+    vapidPublicKey: vapidPublicKey(required(env, "VAPID_PUBLIC_KEY")),
+    vapidPrivateKey: decodedBase64url("VAPID_PRIVATE_KEY", required(env, "VAPID_PRIVATE_KEY"), 32).toString("base64url"),
+    vapidSubject: vapidSubject(required(env, "VAPID_SUBJECT")),
     cronSecret,
-    databaseUrl: databaseUrl(required("DATABASE_URL")),
+    databaseUrl: databaseUrl(required(env, "DATABASE_URL")),
     nodeEnv,
     limits: {
-      hosts: Math.min(2, positiveInteger("PULSE_MAX_HOSTS", 2)),
-      subscriptions: Math.min(3, positiveInteger("PULSE_MAX_SUBSCRIPTIONS", 3)),
-      tasks: Math.min(200, positiveInteger("PULSE_MAX_TASKS", 200)),
-      events: Math.min(10_000, positiveInteger("PULSE_MAX_EVENTS", 10_000)),
-      retentionDays: Math.min(7, positiveInteger("PULSE_RETENTION_DAYS", 7)),
+      hosts: Math.min(2, positiveInteger(env, "PULSE_MAX_HOSTS", 2)),
+      subscriptions: Math.min(3, positiveInteger(env, "PULSE_MAX_SUBSCRIPTIONS", 3)),
+      tasks: Math.min(200, positiveInteger(env, "PULSE_MAX_TASKS", 200)),
+      events: Math.min(10_000, positiveInteger(env, "PULSE_MAX_EVENTS", 10_000)),
+      retentionDays: Math.min(7, positiveInteger(env, "PULSE_RETENTION_DAYS", 7)),
     },
   };
-  return cached;
+}
+
+export function loadConfig(): RelayConfig {
+  return cached ??= validateConfig(process.env);
 }
 
 export function resetConfigForTests(): void {

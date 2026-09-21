@@ -1,6 +1,6 @@
 # CodexPulse Architecture
 
-状态：Public reference snapshot; host/iPhone reliability validation remains out of scope
+状态：Single-source self-hostable implementation; active deployment and host/iPhone reliability remain unverified
 版本：0.1  
 目标：read-only notification MVP
 
